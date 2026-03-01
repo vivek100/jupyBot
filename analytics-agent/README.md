@@ -58,3 +58,72 @@ python analytics-agent/scripts/agent_version.py restore --ref agent/phase1-basel
 ```bash
 python analytics-agent/eval/runner.py --limit 3 --offset 0
 ```
+
+Useful observability flags:
+
+```bash
+# keep lean traces but also persist notebook JSONL artifact
+python analytics-agent/eval/runner.py --limit 3 --capture-notebooks
+
+# full payload mode (trace_metadata + notebooks dumps)
+python analytics-agent/eval/runner.py --limit 3 --mode full
+```
+
+Default run naming convention (when `--run-name` is omitted):
+
+`phase2-spider_dev-<variant>-i<iteration>-o<offset>-l<limit>-<YYYYMMDD-HHMMSS>`
+
+Example:
+
+```bash
+python analytics-agent/eval/runner.py --limit 50 --offset 0 --run-variant baseline --iteration 0
+python analytics-agent/eval/runner.py --limit 50 --offset 0 --run-variant prompt_iter --iteration 1
+```
+
+Each run now logs:
+
+- stable mapping files: `predictions.jsonl`, `trace_index.jsonl`
+- failure rows: `failures.jsonl`
+- compact dashboard tables: `dashboard/predictions_table`, `dashboard/failures_table`
+- canonical summary keys: `summary/*` (for stable W&B workspace panels)
+
+## Improvement Tracking Utilities
+
+Build cross-run question history:
+
+```bash
+python analytics-agent/eval/question_history.py
+```
+
+Manage fix registry and question-level fix judgements:
+
+```bash
+python analytics-agent/eval/fix_registry.py propose --fix-id fix-0001 --rca-tag tool_design --change-type sql_tool_error_handling --description "..."
+python analytics-agent/eval/fix_registry.py decide --fix-id fix-0001 --decision accepted --rationale "..."
+python analytics-agent/eval/fix_registry.py judge-question --question-id spider_1 --run-id <wandb_run_id> --fix-id fix-0001 --decision accepted --judgement improved
+python analytics-agent/eval/fix_registry.py show
+```
+
+Run prompt-governance checks before accepting prompt updates:
+
+```bash
+python analytics-agent/eval/prompt_governance.py --rca-tag prompt_update --pattern-failure-count 7 --pattern-threshold 5
+```
+
+Generate per-question RCA rows for a run's failed questions:
+
+```bash
+python analytics-agent/eval/rca_from_run.py --run-id xk2hr6zt
+```
+
+Label runs for easy loop tracking (`run_1`, `run_2`, ...):
+
+```bash
+python analytics-agent/eval/label_runs.py --set xk2hr6zt=run_1 --set byrxw3fa=run_2
+```
+
+Republish canonical eval metrics + RCA table into a run dashboard:
+
+```bash
+python analytics-agent/eval/publish_run_dashboard.py --run-id xk2hr6zt --run-name "run 1" --run-label run_1
+```

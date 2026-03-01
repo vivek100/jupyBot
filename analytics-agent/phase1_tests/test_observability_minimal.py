@@ -112,15 +112,26 @@ def test_minimal_observability() -> bool:
             raise RuntimeError("trace_index.jsonl empty")
 
         required_fields = [
+            "phase",
+            "group",
             "question_id",
+            "status",
             "expected_value",
             "answer_value",
             "correct",
             "wandb_run_id",
+            "wandb_run_name",
+            "wandb_run_url",
             "trace_id",
             "call_id",
+            "parent_id",
+            "op_name",
+            "trace_started_at",
+            "trace_ended_at",
+            "trace_latency_ms",
             "prompt_version",
             "agent_version",
+            "model_name",
         ]
         missing = [k for k in required_fields if k not in row]
         if missing:
@@ -160,4 +171,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
