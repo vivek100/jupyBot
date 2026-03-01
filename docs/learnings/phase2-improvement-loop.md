@@ -2,6 +2,126 @@
 
 Use docs/learnings/TEMPLATE.md for each entry.
 
+## Entry: 2026-03-01 - Run 2 RCA (ank4a2aw)
+
+### Context
+
+Run 2 was the first full 100-question eval after implementing the initial fix batch.
+
+### Evidence
+
+1. Run id: `ank4a2aw`
+2. Questions: `100`
+3. Correct: `69`
+4. Failed: `31`
+5. Accuracy: `0.69`
+6. RCA files:
+   - `analytics-agent/outputs/improvement/rca_failures_ank4a2aw.jsonl`
+   - `analytics-agent/outputs/improvement/rca_failures_ank4a2aw_summary.json`
+
+Run 1 -> Run 2 failure shift:
+
+1. Total failures: `79 -> 31` (improved by `48`)
+2. `answer_shape_mismatch`: `55 -> 0` (fixed)
+3. `tool_error_unresolved`: `7 -> 0` (fixed)
+4. New dominant residual: `answer_type_string_mismatch`: `3 -> 18`
+5. Residual semantic misses: `other_wrong`: `0 -> 5`
+6. Residual no-answer classes: `fallback_no_answer + null_answer = 8`
+
+### RCA
+
+Primary residual failure classes:
+
+1. `answer_type_string_mismatch` (18)
+   - Pattern: model returns narrative/string `answer_value` while scorer compares scalar first-cell contract.
+   - Representative traces:
+     - `spider_13` trace `019cab97-809d-7ecc-b7e7-0a36f3659346`
+     - `spider_22` trace `019cab98-1ad4-7962-be33-fe70d5205421`
+2. `fallback_no_answer` + `null_answer` (8)
+   - Pattern: finalization after exploration/retry path without grounded final answer.
+   - Representative traces:
+     - `spider_41` trace `019cab99-8bcb-7bb1-a9dc-4eb0646450e2`
+     - `spider_58` trace `019cab9a-8f1a-74e9-8d1b-1093134f6e77`
+3. `other_wrong` (5)
+   - Pattern: semantic SQL targeting errors (wrong field/join/filter selection) despite valid execution.
+   - Representative traces:
+     - `spider_61` trace `019cab9a-bf24-7717-99b5-a053fdb565c1`
+     - `spider_94` trace `019cab9d-0001-7b9d-9d14-deda5e2a1129`
+
+### Proposed Fixes (Pending User Approval)
+
+1. `fix-0204` (`architecture_change`)
+   - Change type: `answer_value_sql_grounding`
+   - Proposal: ground `answer_value` from executed final SQL preview (`row0,col0`) and keep prose in `answer_text`.
+   - Expected impact: reduce `answer_type_string_mismatch`.
+   - Overfit risk: low.
+2. `fix-0205` (`prompt_update`)
+   - Change type: `final_answer_execution_guard`
+   - Proposal: final answer allowed only after executing a final SQL that directly answers question (no schema-only finalization).
+   - Expected impact: reduce fallback/null no-answer outcomes.
+   - Overfit risk: medium.
+   - Prompt governance: passed (`pattern_failure_count=8`, `threshold=5`), see `analytics-agent/outputs/improvement/prompt_governance_fix-0205.json`.
+3. `fix-0206` (`needs_model_training`)
+   - Change type: `semantic_sql_targeting_gaps`
+   - Proposal: route persistent semantic misses to SFT candidate set, avoid one-off prompt patches.
+   - Expected impact: address residual `other_wrong` cluster.
+   - Overfit risk: medium.
+
+### Validation
+
+1. RCA regenerated from run artifacts after run completion.
+2. Fix proposals recorded in registry as `proposed`.
+3. No fix moved to implementation/eval stage; waiting for user approval gate.
+
+### Operational Note
+
+Direct MCP Weave trace retrieval still hit transport decode errors in this environment; RCA used local run artifacts (`predictions.jsonl`, `notebooks.jsonl`, `trace_index.jsonl`) plus trace ids for linkage.
+
+## Entry: 2026-03-01 - Human Approval Gate For Overfitting Control
+
+### Context
+
+We need to prevent quick fix iterations from overfitting to a narrow set of failed questions.
+
+### Problem
+
+Fixes could be implemented and re-evaluated too quickly without explicit human review of overfitting risk.
+
+### Evidence
+
+1. RCA and fix proposal tooling existed, but user approval was not a hard gate.
+2. Prompt changes especially can mask local failures while harming general behavior.
+
+### RCA
+
+Workflow-level control missing: "approve before version + eval."
+
+### Fix
+
+1. Added explicit workflow policy in:
+   - `analytics-agent/FIXES_README.md`
+   - `docs/evals-rca-skill-reference.md`
+   - `docs/analytics-agent-detailed-todo.md`
+2. Required gate:
+   - overfitting risk note,
+   - prompt governance (for prompt updates),
+   - user-approved fix decision recorded in fix registry before version/eval.
+
+### Validation
+
+Documentation now enforces sequencing:
+`RCA -> overfit check -> user approval -> version snapshot -> targeted eval -> full eval`.
+
+### Reusability Notes (Future Skill Candidate)
+
+Candidate workflow primitive: "Human-Gated Fix Promotion"
+
+### References
+
+- `analytics-agent/FIXES_README.md`
+- `docs/evals-rca-skill-reference.md`
+- `docs/analytics-agent-detailed-todo.md`
+
 ## Entry: 2026-03-01 - RCA Tooling Foundation (History + Fix Registry + Prompt Governance)
 
 ### Context

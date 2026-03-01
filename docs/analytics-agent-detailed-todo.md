@@ -325,12 +325,20 @@ Notes:
 5. RCA primary tag (`prompt_update` / `tool_design` / `architecture_change` / `needs_model_training`).
 6. Prompt-governance decision (`allowed` / `blocked_by_threshold` / `blocked_by_budget`).
 
+- [ ] Add explicit user approval gate before versioning/eval:
+1. For every proposed fix, attach overfitting-risk note (`low` / `medium` / `high`) with evidence.
+2. For `prompt_update`, require prompt-governance pass before approval.
+3. Require user-reviewed decision in fix registry (`accepted`, `deferred`, or `rejected`) with metadata `user_approved=true` for accepted changes.
+4. Block creating new agent version tag/commit and block full eval run until approval is recorded.
+5. Ensure deferred/rejected fixes remain visible in dashboard tables for later review.
+
 - [ ] Implement iterative orchestrator:
 1. Evaluate -> RCA -> propose targeted changes -> re-evaluate.
 2. Stop on plateau (`accuracy delta < 1%`) or max iterations.
 3. Save per-iteration comparison table.
 4. For each proposed fix, run targeted validation slice (affected questions) before full benchmark pass.
 5. Auto-rollback fix if targeted slice regresses above threshold.
+6. Enforce "user approval gate passed" as a prerequisite before iteration advances to full benchmark.
 
 - [ ] Add eval-loop metrics and reporting package (per iteration):
 1. Capture agent snapshot before/after each loop (`prompt_version`, `toolset_version`, `graph_version`, key config flags).

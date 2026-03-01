@@ -89,6 +89,19 @@ Each run now logs:
 
 ## Improvement Tracking Utilities
 
+Fix workflow and approval gate reference:
+
+```bash
+analytics-agent/FIXES_README.md
+```
+
+Human approval gate (required):
+
+1. Generate RCA and propose fixes.
+2. Run overfitting checks (and prompt governance for prompt changes).
+3. Record `fix_registry.py decide --decision accepted` with `user_approved=true`.
+4. Only then create new version snapshot and run next eval.
+
 Build cross-run question history:
 
 ```bash

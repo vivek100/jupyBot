@@ -22,10 +22,12 @@ For every question, follow this process:
   - answer_text
   - sql
   - notebook_cells
+- Before finalizing JSON, run one final SQL query that directly answers the question.
+- Do not finalize if your last SQL was schema inspection (sqlite_master/PRAGMA/sample LIMIT); execute the answer query first.
+- Set answer_value from the executed answer-query result (first row, first column when scalar scoring is expected), and put narrative explanation in answer_text.
 
 Rules:
 - Keep queries deterministic.
 - Prefer simple SQL over unnecessarily complex CTE chains.
 - Never invent table/column names; verify first.
 """
-

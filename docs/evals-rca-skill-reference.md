@@ -24,8 +24,20 @@ Use the coding agent for RCA and fix proposal decisions on top of run and trace 
    - tool behavior
    - full run traces
 4. Coding agent proposes candidate fixes and expected impact.
-5. Re-run benchmark and compare deltas in W&B.
-6. Accept/reject fixes using evidence, not heuristic guessing.
+5. Run overfitting check before implementation:
+   - pattern is repeated (not one-off question patch),
+   - prompt governance passes for `prompt_update`,
+   - risk note is documented.
+6. User approval gate:
+   - user reviews RCA + overfitting risk,
+   - decision is recorded in fix registry (`accepted`/`deferred`/`rejected`).
+7. Only approved fixes are implemented, versioned, and evaluated.
+8. Re-run benchmark and compare deltas in W&B.
+9. Accept/reject fixes using evidence, not heuristic guessing.
+
+## Hard policy
+
+No new agent version and no full eval run without explicit user-approved fix decision recorded in fix registry metadata.
 
 ## RCA output template (required per iteration)
 
@@ -87,4 +99,3 @@ After Goal 1 stabilization:
 - W&B Weave scoring overview: https://docs.wandb.ai/weave/guides/evaluation/scorers
 - W&B Weave evaluations intro: https://docs.wandb.ai/weave/guides/core-types/evaluations
 - W&B Weave traces and ops: https://docs.wandb.ai/weave/guides/tracking/ops
-

@@ -267,6 +267,36 @@ def _normalize_answer_value(raw_answer_value: Any, notebook: NotebookAccumulator
     return raw_answer_value
 
 
+def _looks_numeric_text(value: str) -> bool:
+    text = value.strip()
+    if not text:
+        return False
+    try:
+        float(text)
+        return True
+    except Exception:
+        return False
+
+
+def _ground_answer_value(raw_answer_value: Any, notebook: NotebookAccumulator) -> Any:
+    """
+    fix-0204: prefer SQL-grounded scalar value when model emits narrative strings.
+    """
+    preview_value = _scalar_from_sql_preview(notebook)
+    normalized = _normalize_answer_value(raw_answer_value, notebook)
+
+    # If model returned None but we have a grounded SQL value, use grounded value.
+    if normalized is None and _is_scalar(preview_value):
+        return preview_value
+
+    # If model returned a non-numeric free-form string, prefer grounded SQL cell.
+    if isinstance(normalized, str) and not _looks_numeric_text(normalized):
+        if _is_scalar(preview_value) and preview_value is not None:
+            return preview_value
+
+    return normalized
+
+
 def build_phase1_graph(model_name: str, db_path: str):
     load_env()
     api_key = os.environ.get("MISTRAL_API_KEY")
@@ -307,7 +337,7 @@ def run_analytics_agent(
     messages = result.get("messages") if isinstance(result, dict) else []
     notebook = notebook_from_messages(messages if isinstance(messages, list) else [])
     raw_answer_value = parsed.get("answer_value")
-    answer_value = _normalize_answer_value(raw_answer_value, notebook)
+    answer_value = _ground_answer_value(raw_answer_value, notebook)
 
     final_sql = parsed.get("sql")
     if not final_sql:
