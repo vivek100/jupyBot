@@ -1,0 +1,11 @@
+{
+  "$schema": "https://raw.githubusercontent.com/langchain-ai/langgraph/main/libs/cli/schemas/langgraph.schema.json",
+  "dependencies": [
+    "./analytics-agent"
+  ],
+  "graphs": {
+    "phase0_react_agent": "./analytics-agent/agent/graph_entry.py:phase0_graph",
+    "analytics_agent": "./analytics-agent/agent/graph_entry.py:phase1_graph"
+  },
+  "env": ".env"
+}

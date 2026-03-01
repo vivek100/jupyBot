@@ -1,0 +1,13 @@
+langgraph>=0.2.70
+langchain>=0.3.0
+langchain-core>=0.3.0
+langchain-mistralai>=0.2.0
+mistralai>=1.0.0
+wandb>=0.18.0
+weave>=0.51.0
+python-dotenv>=1.0.1
+pandas>=2.2.0
+numpy>=2.0.0
+matplotlib>=3.9.0
+scipy>=1.14.0
+
