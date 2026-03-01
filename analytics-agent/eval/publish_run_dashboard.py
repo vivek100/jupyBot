@@ -140,6 +140,21 @@ def main() -> int:
         {
             "dashboard/eval_score": final_accuracy,
             "dashboard/failed_questions_count": len(failures),
+            "dashboard/question_eval_table": _table_from_rows(
+                [
+                    {
+                        "question_id": r.get("question_id"),
+                        "question": r.get("question"),
+                        "db_id": r.get("db_id"),
+                        "correct": r.get("correct"),
+                        "expected_value": r.get("expected_value"),
+                        "answer_value": r.get("answer_value"),
+                        "trace_id": r.get("trace_id"),
+                        "run_url": r.get("wandb_run_url"),
+                    }
+                    for r in predictions
+                ]
+            ),
             "dashboard/rca_failures_table": _table_from_rows(rca_rows[: max(1, args.rca_max_rows)]),
         }
     )

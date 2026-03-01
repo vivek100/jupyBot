@@ -386,6 +386,7 @@ def log_question_result(
         "correct": 1 if correct is True else 0,
         "exec_accuracy": correct,
         "running_accuracy": running_accuracy,
+        "running_accuracy_pct": round(running_accuracy * 100.0, 4),
         "sql_error_rate": metrics.get("sql_error_rate"),
         "python_error_rate": metrics.get("python_error_rate"),
         "tool_calls_count": metrics.get("tool_calls_count"),

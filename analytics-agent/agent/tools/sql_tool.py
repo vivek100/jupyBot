@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import difflib
 import json
+import re
 import sqlite3
 from pathlib import Path
 from typing import Any
@@ -35,11 +37,84 @@ def _to_json_safe(value: Any) -> Any:
     return str(value)
 
 
+def _extract_missing_object(error_text: str) -> tuple[str | None, str | None]:
+    table_match = re.search(r"no such table:\s*([^\s]+)", error_text, flags=re.IGNORECASE)
+    col_match = re.search(r"no such column:\s*([^\s]+)", error_text, flags=re.IGNORECASE)
+    missing_table = table_match.group(1).strip("'\"`[]") if table_match else None
+    missing_column = col_match.group(1).strip("'\"`[]") if col_match else None
+    if missing_column and "." in missing_column:
+        missing_column = missing_column.split(".")[-1]
+    return missing_table, missing_column
+
+
+def _list_tables(conn: sqlite3.Connection) -> list[str]:
+    rows = conn.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").fetchall()
+    return [str(r[0]) for r in rows if r and r[0]]
+
+
+def _list_columns(conn: sqlite3.Connection, table_name: str) -> list[str]:
+    safe = table_name.replace('"', '""')
+    rows = conn.execute(f'PRAGMA table_info("{safe}")').fetchall()
+    return [str(r[1]) for r in rows if len(r) > 1 and r[1]]
+
+
+def _suggest(target: str, candidates: list[str], limit: int = 5) -> list[str]:
+    if not target or not candidates:
+        return []
+    variants = {target}
+    if target.endswith("s") and len(target) > 1:
+        variants.add(target[:-1])
+    variants.add(target + "s")
+    out: list[str] = []
+    for v in variants:
+        for m in difflib.get_close_matches(v, candidates, n=limit, cutoff=0.35):
+            if m not in out:
+                out.append(m)
+    return out[:limit]
+
+
+def _build_error_assist(conn: sqlite3.Connection, sql: str, error_text: str) -> dict[str, Any]:
+    tables = _list_tables(conn)
+    missing_table, missing_column = _extract_missing_object(error_text)
+    payload: dict[str, Any] = {
+        "attempted_sql": sql,
+        "available_tables": tables[:30],
+    }
+
+    if missing_table:
+        payload["missing_table"] = missing_table
+        table_suggestions = _suggest(missing_table, tables)
+        payload["table_suggestions"] = table_suggestions
+        if table_suggestions:
+            payload["suggested_recovery_sql"] = [
+                f'SELECT * FROM "{table_suggestions[0]}" LIMIT 5;',
+                "SELECT name FROM sqlite_master WHERE type='table';",
+            ]
+
+    if missing_column:
+        payload["missing_column"] = missing_column
+        all_columns: list[str] = []
+        col_to_tables: dict[str, list[str]] = {}
+        for table in tables:
+            cols = _list_columns(conn, table)
+            for col in cols:
+                all_columns.append(col)
+                col_to_tables.setdefault(col, []).append(table)
+        col_suggestions = _suggest(missing_column, all_columns)
+        payload["column_suggestions"] = col_suggestions
+        payload["column_candidate_tables"] = {
+            c: col_to_tables.get(c, [])[:8] for c in col_suggestions
+        }
+
+    return payload
+
+
 @_op
 def _execute_sql_impl(sql: str, db_path: str, preview_rows: int = 5) -> dict[str, Any]:
     path = Path(db_path)
     if not path.exists():
         return {"ok": False, "error": f"DB not found: {db_path}"}
+    conn: sqlite3.Connection | None = None
     try:
         conn = sqlite3.connect(path.as_posix())
         cur = conn.cursor()
@@ -60,7 +135,16 @@ def _execute_sql_impl(sql: str, db_path: str, preview_rows: int = 5) -> dict[str
             "dtypes": dtypes,
         }
     except Exception as exc:
-        return {"ok": False, "error": str(exc)}
+        payload = {"ok": False, "error": str(exc), "attempted_sql": sql}
+        if conn is not None:
+            try:
+                payload.update(_build_error_assist(conn, sql=sql, error_text=str(exc)))
+            except Exception:
+                pass
+        return payload
+    finally:
+        if conn is not None:
+            conn.close()
 
 
 def create_execute_sql_tool(db_path: str):

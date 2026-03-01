@@ -220,6 +220,53 @@ def _metrics_from_notebook(notebook: NotebookAccumulator, latency_ms: int) -> di
     }
 
 
+def _is_scalar(v: Any) -> bool:
+    return v is None or isinstance(v, (str, int, float, bool))
+
+
+def _scalar_from_any(v: Any) -> Any:
+    if _is_scalar(v):
+        return v
+    if isinstance(v, (list, tuple)):
+        if not v:
+            return None
+        return _scalar_from_any(v[0])
+    if isinstance(v, dict):
+        if not v:
+            return None
+        for key in ("answer_value", "value", "result"):
+            if key in v:
+                return _scalar_from_any(v[key])
+        first_val = next(iter(v.values()))
+        return _scalar_from_any(first_val)
+    return None
+
+
+def _scalar_from_sql_preview(notebook: NotebookAccumulator) -> Any:
+    for cell in reversed(notebook.cells):
+        if cell.get("cell_type") != "sql":
+            continue
+        out = cell.get("output")
+        if not isinstance(out, dict) or out.get("ok") is not True:
+            continue
+        preview = out.get("preview_rows")
+        value = _scalar_from_any(preview)
+        if _is_scalar(value):
+            return value
+    return None
+
+
+def _normalize_answer_value(raw_answer_value: Any, notebook: NotebookAccumulator) -> Any:
+    # fix-0201: normalize non-scalar model outputs to scorer-compatible scalar.
+    direct = _scalar_from_any(raw_answer_value)
+    if _is_scalar(direct):
+        return direct
+    preview_value = _scalar_from_sql_preview(notebook)
+    if _is_scalar(preview_value):
+        return preview_value
+    return raw_answer_value
+
+
 def build_phase1_graph(model_name: str, db_path: str):
     load_env()
     api_key = os.environ.get("MISTRAL_API_KEY")
@@ -259,6 +306,8 @@ def run_analytics_agent(
 
     messages = result.get("messages") if isinstance(result, dict) else []
     notebook = notebook_from_messages(messages if isinstance(messages, list) else [])
+    raw_answer_value = parsed.get("answer_value")
+    answer_value = _normalize_answer_value(raw_answer_value, notebook)
 
     final_sql = parsed.get("sql")
     if not final_sql:
@@ -272,7 +321,9 @@ def run_analytics_agent(
         "runtime": runtime,
         "model_name": model_name,
         "db_path": db_path,
-        "answer_value": parsed.get("answer_value"),
+        "answer_value": answer_value,
+        "answer_value_raw": raw_answer_value,
+        "answer_value_was_normalized": answer_value != raw_answer_value,
         "answer_text": parsed.get("answer_text", final_text),
         "sql": final_sql,
         "notebook_cells": parsed.get("notebook_cells", len(notebook)),
@@ -280,4 +331,3 @@ def run_analytics_agent(
         "metrics": metrics,
         "raw_final_content": final_text,
     }
-
