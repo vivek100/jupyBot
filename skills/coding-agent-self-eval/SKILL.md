@@ -1,6 +1,6 @@
 ---
 name: coding-agent-self-eval
-description: Orchestrate a self-improving coding-agent loop using W&B projects, runs, traces, evals, and reports. Use when running iterative RCA-to-fix cycles with human approval gates and version-to-run mapping.
+description: Guide coding agents on how to run a full self-evaluation loop on the AI agent they are working on: define eval datasets/benchmarks, instrument W&B runs and Weave traces, execute evals, perform RCA, apply human-gated fixes, and iterate with versioned comparisons.
 ---
 
 # Coding Agent Self Eval
