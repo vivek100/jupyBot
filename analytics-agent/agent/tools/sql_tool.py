@@ -73,6 +73,22 @@ def _suggest(target: str, candidates: list[str], limit: int = 5) -> list[str]:
     return out[:limit]
 
 
+def _build_nocase_variant(sql: str) -> str | None:
+    if re.search(r"\bcollate\s+nocase\b", sql, flags=re.IGNORECASE):
+        return None
+    if not re.search(r"=\s*'[^']*'", sql):
+        return None
+    # Apply case-insensitive equality for string literals.
+    variant = re.sub(
+        r"=\s*'([^']*)'",
+        lambda m: f"= '{m.group(1)}' COLLATE NOCASE",
+        sql,
+    )
+    if variant == sql:
+        return None
+    return variant
+
+
 def _build_error_assist(conn: sqlite3.Connection, sql: str, error_text: str) -> dict[str, Any]:
     tables = _list_tables(conn)
     missing_table, missing_column = _extract_missing_object(error_text)
@@ -121,6 +137,27 @@ def _execute_sql_impl(sql: str, db_path: str, preview_rows: int = 5) -> dict[str
         cur.execute(sql)
         rows = cur.fetchall()
         cols = [d[0] for d in (cur.description or [])]
+        executed_sql = sql
+
+        # fix-0302: automatic case-insensitive retry for zero-row string equality filters.
+        auto_recovered = False
+        auto_recovery_sql = None
+        if len(rows) == 0:
+            nocase_sql = _build_nocase_variant(sql)
+            if nocase_sql:
+                try:
+                    cur2 = conn.cursor()
+                    cur2.execute(nocase_sql)
+                    rows2 = cur2.fetchall()
+                    if rows2:
+                        rows = rows2
+                        cols = [d[0] for d in (cur2.description or cols)]
+                        executed_sql = nocase_sql
+                        auto_recovered = True
+                        auto_recovery_sql = nocase_sql
+                except Exception:
+                    pass
+
         preview = rows[: max(1, preview_rows)]
         dtypes = {
             col: (type(preview[0][i]).__name__ if preview else "unknown")
@@ -133,6 +170,9 @@ def _execute_sql_impl(sql: str, db_path: str, preview_rows: int = 5) -> dict[str
             "columns": cols,
             "preview_rows": _to_json_safe(preview),
             "dtypes": dtypes,
+            "executed_sql": executed_sql,
+            "auto_recovered": auto_recovered,
+            "auto_recovery_sql": auto_recovery_sql,
         }
     except Exception as exc:
         payload = {"ok": False, "error": str(exc), "attempted_sql": sql}
