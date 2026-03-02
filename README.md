@@ -1,6 +1,7 @@
 # Self-Evolving Analytics Agent (Submission)
 
 Last updated: 2026-03-01
+Skills PR: https://github.com/wandb/wandb-mcp-server/pull/24
 
 ## What We Did
 
