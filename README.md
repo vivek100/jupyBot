@@ -34,7 +34,7 @@ flowchart TD
 ## How We Used Coding Agent + Skills + MCP
 
 1. Coding agent handled implementation, RCA evidence extraction, and fix proposal drafting.
-2. Skills package codified repeatable steps (project bootstrap, tracing, eval, RCA gate, version mapping).
+2. Skills package codified repeatable W&B feature steps (`projects`, `runs`, `traces`, `evals`, `reports`) plus one orchestration skill (`coding-agent-self-eval`).
 3. MCP/W&B tools were used for project/run validation and trace/dashboard operations.
 4. Human remained final decision maker for fix acceptance to avoid overfitting.
 
@@ -46,11 +46,11 @@ The `skills/` hierarchy is designed as an execution playbook that any coding age
 2. Each topic `SKILL.md` defines deterministic workflow steps and guardrails.
 3. Together, these skills let a coding agent:
    - bootstrap correct W&B project/entity values,
-   - enable tracing/artifacts consistently,
-   - configure W&B eval/scorer behavior consistently,
-   - run eval slices and publish dashboards,
-   - perform RCA with human approval gating,
-   - map code versions to run outcomes for reproducible iteration.
+   - standardize run naming/config/tags,
+   - query traces for evidence-backed RCA,
+   - run question-level evals with canonical scoring,
+   - publish dashboards/reports with run comparisons,
+   - orchestrate human-gated fix loops across versions.
 4. This makes the eval loop transferable to other analytics or coding agents, not tied only to this project.
 
 ## Skills-Driven Setup Flow (Any Agent)
@@ -58,20 +58,18 @@ The `skills/` hierarchy is designed as an execution playbook that any coding age
 ```mermaid
 flowchart TD
     A[Choose Target Agent] --> B[Open skills/skills.md]
-    B --> C[01-mcp-project-bootstrap]
+    B --> C[wandb-projects]
     C --> D[Resolve project/entity and runtime context]
-    D --> E[02-tracing-artifacts]
-    E --> F[Enable run tracing + artifact schema]
-    F --> G[03-eval-dashboard]
-    G --> H[Run benchmark slice + publish dashboard]
-    H --> I[04-rca-human-gate]
+    D --> E[wandb-runs]
+    E --> F[Start versioned run with stable metrics schema]
+    F --> G[wandb-traces]
+    G --> H[Collect trace evidence for failures]
+    H --> I[wandb-evals]
     I --> J[RCA + human-approved fix decisions]
-    J --> K[05-version-mapping]
+    J --> K[wandb-reports]
     K --> L[Version/run linkage + run_n folders]
-    L --> M[06-submission-packaging]
-    M --> N[Submission-ready README + evidence]
-    N --> O[07-next-iteration-evals]
-    O --> P[Memory + LLM-judge + JSON parsing + SFT escalation]
+    L --> M[coding-agent-self-eval]
+    M --> N[Implement approved fixes + run next iteration]
 ```
 
 ## Runs And Outcomes
@@ -102,7 +100,7 @@ flowchart TD
 ## Submission Assets
 
 1. Skills index: `skills/skills.md`
-2. Skills folders: `skills/01-*` to `skills/08-*`
+2. Skills folders: `skills/wandb-*` + `skills/coding-agent-self-eval/`
 3. Fix workflow gate: `analytics-agent/FIXES_README.md`
 4. RCA summaries:
    - `analytics-agent/outputs/improvement/rca_failures_ank4a2aw_summary.json`
