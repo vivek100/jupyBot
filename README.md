@@ -81,6 +81,7 @@ flowchart TD
 | run_1 | xk2hr6zt | offset 0, limit 100 | 1844c71 | 21 / 100 | 0.21 | Baseline |
 | run_2 | ank4a2aw | offset 0, limit 100 | 34d75d4 | 69 / 100 | 0.69 | Big gain after contract/tool fixes |
 | run_3 | 9xild9wl | offset 100, limit 100 | e6d031a | 37 / 100 | 0.37 | Different slice exposed generalization gaps |
+| run_4 | 0uz4zvcz | offset 200, limit 100 | eeef51e | 53 / 100 | 0.53 | After schema tool + SQL no-case recovery; improved over run_3 |
 
 ## Fixes And Impact
 
@@ -116,6 +117,7 @@ Use this path during demo so judges can navigate by run label instead of run ID:
 2. `analytics-agent/outputs/runs/run_1/`
 3. `analytics-agent/outputs/runs/run_2/`
 4. `analytics-agent/outputs/runs/run_3/`
+5. `analytics-agent/outputs/runs/run_4/`
 
 Each run folder contains:
 1. `README.md` (what happened in that run)
