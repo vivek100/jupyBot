@@ -101,11 +101,12 @@ flowchart TD
 
 1. Skills index: `skills/skills.md`
 2. Skills folders: `skills/wandb-*` + `skills/coding-agent-self-eval/`
-3. Fix workflow gate: `analytics-agent/FIXES_README.md`
-4. RCA summaries:
+3. W&B MCP skills PR: `https://github.com/wandb/wandb-mcp-server/pull/24`
+4. Fix workflow gate: `analytics-agent/FIXES_README.md`
+5. RCA summaries:
    - `analytics-agent/outputs/improvement/rca_failures_ank4a2aw_summary.json`
    - `analytics-agent/outputs/improvement/rca_failures_9xild9wl_summary.json`
-5. Next backlog (separate from presentation): `docs/submission-next-todo.md`
+6. Next backlog (separate from presentation): `docs/submission-next-todo.md`
 
 ## Run-Centric Demo Data
 

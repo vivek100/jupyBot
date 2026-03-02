@@ -5,41 +5,36 @@ description: Guide coding agents on how to run a full self-evaluation loop on th
 
 # Coding Agent Self Eval
 
-Run a full loop with evidence and controls.
+Use this as a standalone workflow skill for an end-to-end RCA -> fix -> re-eval loop.
 
-## Prerequisites
+## Core Policy
 
-Use these skills first or in parallel:
-1. `wandb-projects`
-2. `wandb-runs`
-3. `wandb-traces`
-4. `wandb-evals`
-5. `wandb-reports`
+No new version and no new full eval unless fix decisions are user-approved and recorded.
 
-## Loop
+## Load Order
 
-1. Resolve entity/project and validate context.
-2. Execute eval slice and log question-level correctness.
-3. Publish run dashboard and failure artifacts.
-4. Run RCA on failed questions using traces plus code references.
-5. Classify each fix candidate:
-   - prompt update
-   - tool design
-   - architecture change
-   - needs model training
-6. Enforce human approval gate before implementing fixes.
-7. Implement approved fixes, version code, and launch next run.
-8. Compare run-to-run outcome deltas and repeat.
+Read and execute these reference docs in order:
 
-## Guardrails
+1. `references/01-mcp-project-bootstrap.md`
+2. `references/02-tracing-artifacts.md`
+3. `references/08-wandb-evals-setup.md`
+4. `references/03-eval-dashboard.md`
+5. `references/04-rca-human-gate.md`
+6. `references/05-version-mapping.md`
+7. `references/06-submission-packaging.md`
+8. `references/07-next-iteration-evals.md`
 
-1. Do not patch prompt blindly for isolated failures.
-2. Apply prompt changes only on repeated pattern evidence.
-3. Track prompt growth and enforce a hard prompt-size budget.
-4. Maintain fix registry and version mapping for auditability.
+## Data Reconciliation Rule
 
-## Fallback Order
+If data is inconsistent across W&B charts, local summaries, and artifacts:
 
-1. Use W&B MCP data + local run artifacts as primary truth.
-2. Use official docs only when tool behavior is uncertain.
-3. Inspect local library code when docs/tool outputs conflict.
+1. Treat `predictions.jsonl` and scorer rows as canonical correctness source.
+2. Recompute run metrics from question rows.
+3. Regenerate RCA for the same `run_id`.
+4. Re-publish dashboard tables.
+5. Continue only after consistency is restored.
+
+## Why This Skill Is Standalone
+
+This skill does not depend on parent/base skills at runtime.
+It contains the original jupyBot execution workflow through the reference files above.
