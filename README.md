@@ -7,25 +7,28 @@ Last updated: 2026-03-01
 We built and tested an end-to-end improvement loop for an analytics agent on Spider:
 1. Built agent + tools (`execute_sql`, `run_python`) with notebook/tool-call evidence.
 2. Added W&B + Weave observability with per-question artifacts and run-level dashboards.
-3. Ran benchmark slices, generated per-run RCA, and tracked fixes in a registry.
-4. Enforced a human approval gate before promoting fixes to new eval runs.
-5. Packaged the workflow into reusable skills for future coding-agent automation.
+3. Added explicit W&B eval/scorer setup for benchmark slices and comparable run logging.
+4. Ran benchmark slices, generated per-run RCA, and tracked fixes in a registry.
+5. Enforced a human approval gate before promoting fixes to new eval runs.
+6. Packaged the workflow into reusable skills for future coding-agent automation.
 
 ## Eval Loop Flow
 
 ```mermaid
 flowchart TD
-    A[Start: Benchmark Slice] --> B[Run Analytics Agent]
-    B --> C[Log W&B Metrics + Weave Traces]
-    C --> D[Write Artifacts: predictions, failures, trace_index, notebooks]
-    D --> E[Dashboard Publish + Run Label]
-    E --> F[Coding Agent RCA]
-    F --> G[Fix Proposals in Registry]
-    G --> H[Human Review Gate]
-    H -->|Accepted| I[Implement Fixes + Commit Version]
-    H -->|Deferred/Rejected| J[Backlog / SFT Candidate]
-    I --> K[Run Next Eval Slice]
-    K --> C
+    A[Start: Benchmark Slice] --> B[Setup Tracing/Artifacts Context]
+    B --> C[W&B Eval Setup: scorer + run config]
+    C --> D[Run Analytics Agent]
+    D --> E[Log W&B Metrics + Weave Traces]
+    E --> F[Write Artifacts: predictions, failures, trace_index, notebooks]
+    F --> G[Dashboard Publish + Run Label]
+    G --> H[Coding Agent RCA]
+    H --> I[Fix Proposals in Registry]
+    I --> J[Human Review Gate]
+    J -->|Accepted| K[Implement Fixes + Commit Version]
+    J -->|Deferred/Rejected| L[Backlog / SFT Candidate]
+    K --> M[Run Next Eval Slice]
+    M --> B
 ```
 
 ## How We Used Coding Agent + Skills + MCP
@@ -44,10 +47,32 @@ The `skills/` hierarchy is designed as an execution playbook that any coding age
 3. Together, these skills let a coding agent:
    - bootstrap correct W&B project/entity values,
    - enable tracing/artifacts consistently,
+   - configure W&B eval/scorer behavior consistently,
    - run eval slices and publish dashboards,
    - perform RCA with human approval gating,
    - map code versions to run outcomes for reproducible iteration.
 4. This makes the eval loop transferable to other analytics or coding agents, not tied only to this project.
+
+## Skills-Driven Setup Flow (Any Agent)
+
+```mermaid
+flowchart TD
+    A[Choose Target Agent] --> B[Open skills/skills.md]
+    B --> C[01-mcp-project-bootstrap]
+    C --> D[Resolve project/entity and runtime context]
+    D --> E[02-tracing-artifacts]
+    E --> F[Enable run tracing + artifact schema]
+    F --> G[03-eval-dashboard]
+    G --> H[Run benchmark slice + publish dashboard]
+    H --> I[04-rca-human-gate]
+    I --> J[RCA + human-approved fix decisions]
+    J --> K[05-version-mapping]
+    K --> L[Version/run linkage + run_n folders]
+    L --> M[06-submission-packaging]
+    M --> N[Submission-ready README + evidence]
+    N --> O[07-next-iteration-evals]
+    O --> P[Memory + LLM-judge + JSON parsing + SFT escalation]
+```
 
 ## Runs And Outcomes
 
@@ -76,9 +101,24 @@ The `skills/` hierarchy is designed as an execution playbook that any coding age
 ## Submission Assets
 
 1. Skills index: `skills/skills.md`
-2. Skills folders: `skills/01-*` to `skills/07-*`
+2. Skills folders: `skills/01-*` to `skills/08-*`
 3. Fix workflow gate: `analytics-agent/FIXES_README.md`
 4. RCA summaries:
    - `analytics-agent/outputs/improvement/rca_failures_ank4a2aw_summary.json`
    - `analytics-agent/outputs/improvement/rca_failures_9xild9wl_summary.json`
 5. Next backlog (separate from presentation): `docs/submission-next-todo.md`
+
+## Run-Centric Demo Data
+
+Use this path during demo so judges can navigate by run label instead of run ID:
+
+1. `analytics-agent/outputs/runs/README.md`
+2. `analytics-agent/outputs/runs/run_1/`
+3. `analytics-agent/outputs/runs/run_2/`
+4. `analytics-agent/outputs/runs/run_3/`
+
+Each run folder contains:
+1. `README.md` (what happened in that run)
+2. `metadata.json` (run id/url/metrics/fix context)
+3. `observability/` (predictions, failures, trace mapping, notebooks if available)
+4. `rca/` (RCA rows and summary)

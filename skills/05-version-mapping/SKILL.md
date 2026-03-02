@@ -22,7 +22,12 @@ For every benchmark run, map:
 2. Run benchmark and capture run ID/URL.
 3. Label run with `run_n`.
 4. Publish canonical dashboard summary.
-5. Build/refresh question history across runs.
+5. Create/update `analytics-agent/outputs/runs/run_n/` with:
+   - `metadata.json`
+   - `README.md`
+   - `observability/`
+   - `rca/`
+6. Build/refresh question history across runs.
 
 ## Commands
 
@@ -46,3 +51,4 @@ git rev-parse --short HEAD
 2. Keep `run_n` sequence unique.
 3. If slice differs, mark comparability limits in report.
 4. Preserve historical rows; never overwrite prior run artifacts.
+5. Demo navigation should start at `analytics-agent/outputs/runs/`.

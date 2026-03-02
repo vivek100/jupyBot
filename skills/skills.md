@@ -26,11 +26,12 @@ Use these skills when you need repeatable, evidence-driven iteration for an anal
 Recommended sequence:
 1. `01-mcp-project-bootstrap`
 2. `02-tracing-artifacts`
-3. `03-eval-dashboard`
-4. `04-rca-human-gate`
-5. `05-version-mapping`
-6. `06-submission-packaging`
-7. `07-next-iteration-evals`
+3. `08-wandb-evals-setup`
+4. `03-eval-dashboard`
+5. `04-rca-human-gate`
+6. `05-version-mapping`
+7. `06-submission-packaging`
+8. `07-next-iteration-evals`
 
 ## Available Skills
 
@@ -54,3 +55,13 @@ Prepare final submission narrative and evidence links from run artifacts.
 
 7. [07-next-iteration-evals](./07-next-iteration-evals/SKILL.md)  
 Plan memory, LLM-judge, JSON parsing, and SFT escalation workflow.
+
+8. [08-wandb-evals-setup](./08-wandb-evals-setup/SKILL.md)  
+Configure W&B/Weave eval setup, scorer strategy, and run-level eval logging schema.
+
+## Demo Data Convention
+
+For judge/demo usability, maintain run data in:
+1. `analytics-agent/outputs/runs/run_1/`
+2. `analytics-agent/outputs/runs/run_2/`
+3. `analytics-agent/outputs/runs/run_3/`

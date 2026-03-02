@@ -20,6 +20,9 @@ Use this skill to execute benchmark runs and publish comparable dashboard output
 3. Generate RCA for that run.
 4. Label run with `run_n`.
 5. Publish canonical dashboard tables/summary.
+6. Materialize run-centric folder:
+   - `analytics-agent/outputs/runs/run_n/`
+   - include run README + metadata + observability + RCA files.
 
 ## Commands
 
@@ -51,3 +54,4 @@ Use this skill to execute benchmark runs and publish comparable dashboard output
 1. Do not compare runs from different slices without marking slice metadata.
 2. If command times out locally, confirm whether W&B sync still completed before retrying.
 3. Keep canonical summary keys consistent across all runs.
+4. Keep demo data under `analytics-agent/outputs/runs/` so judges can navigate by run label.
