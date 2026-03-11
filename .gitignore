@@ -22,3 +22,13 @@ analytics-agent/phase1_tests/artifacts/
 analytics-agent/data/
 C:/spider_data/
 
+# Research and experiment folders
+wandb/
+mcp-server/
+autoresearch/
+docs/
+analytics-agent-autoresearch/
+
+# Progress plot
+analytics-agent/accuracy_progress.png
+

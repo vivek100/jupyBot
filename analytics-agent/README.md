@@ -1,5 +1,25 @@
 # Analytics Agent (Phase 0)
 
+## 🎯 Accuracy Progress
+
+![Accuracy Progress](accuracy_progress.png)
+
+We've improved the analytics agent from **21%** to **84%** accuracy using a **Small Mistral model (7B parameters)** through systematic prompt engineering:
+
+- **v0 (Baseline)**: 21% - Initial implementation with ambiguous output format
+- **v3 (Scalar fix)**: 74.4% - Fixed `answer_value` to always be scalar and added `run_python` guidance
+- **v5 (Few-shot)**: 89.7% - Added few-shot examples (39 questions)
+- **v6 (100q random)**: 82.0% - Expanded to 100 randomized questions
+- **v7 (Refined)**: 83.0% - Improved examples and column selection guidance
+- **v8 (Real-data)**: 84.0% - Added detailed commentary and real-data examples
+
+**Key improvements**:
+- Enforced scalar `answer_value` output
+- Added `run_python` tool for post-processing SQL results
+- Implemented few-shot examples with column selection guidance
+- Added deterministic `ORDER BY` for grouped aggregations
+- Enhanced examples with step-by-step reasoning
+
 ## Setup
 
 1. Create virtual env and install deps:

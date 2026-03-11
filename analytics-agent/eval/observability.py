@@ -147,7 +147,8 @@ def _extract_trace_latency_ms(call_obj: Any | None) -> int | None:
 
 def score_answer_value(answer_value: Any, expected_value: Any) -> bool | None:
     if expected_value is None:
-        return None
+        # Gold query returned no rows; agent also returning None is correct.
+        return True if answer_value is None else False
     got = _to_float(answer_value)
     exp = _to_float(expected_value)
     if got is not None and exp is not None:
@@ -208,11 +209,16 @@ class ObservabilitySession:
     step: int = 0
 
 
+def _default_out_dir() -> Path:
+    """Resolve observability output dir relative to the project root, not CWD."""
+    return Path(__file__).resolve().parent.parent / "outputs" / "observability"
+
+
 def start_observability_session(
     run_name: str,
     project: str,
     entity: str | None,
-    out_dir: str | Path = "analytics-agent/outputs/observability",
+    out_dir: str | Path | None = None,
     group: str = "phase1-observability",
     tags: list[str] | None = None,
     config: dict[str, Any] | None = None,
@@ -234,7 +240,8 @@ def start_observability_session(
         reinit="finish_previous",
     )
 
-    out_path = Path(out_dir) / run.id
+    resolved_out_dir = Path(out_dir) if out_dir is not None else _default_out_dir()
+    out_path = resolved_out_dir / run.id
     out_path.mkdir(parents=True, exist_ok=True)
     (out_path / "failures.jsonl").touch(exist_ok=True)
     traces_path = out_path / "trace_metadata.jsonl" if mode == "full" else None
