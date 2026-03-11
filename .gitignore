@@ -27,8 +27,11 @@ wandb/
 mcp-server/
 autoresearch/
 docs/
-analytics-agent-autoresearch/
 
 # Progress plot
 analytics-agent/accuracy_progress.png
 
+analytics-agent-autoresearch/
+wandb/
+wandb-mcp-server/
+docs/
