@@ -1,74 +1,87 @@
-# Self-Evolving Analytics Agent (Submission)
+# Self-Evolving Analytics Agent (Research Project)
 
-## What We Did
+Last updated: 2026-03-12
 
-We built and tested an end-to-end improvement loop for an analytics agent on Spider:
-1. Built agent + tools (`execute_sql`, `run_python`) with notebook/tool-call evidence.
-2. Added W&B + Weave observability with per-question artifacts and run-level dashboards.
-3. Added explicit W&B eval/scorer setup for benchmark slices and comparable run logging.
-4. Ran benchmark slices, generated per-run RCA, and tracked fixes in a registry.
-5. Enforced a human approval gate before promoting fixes to new eval runs.
-6. Packaged the workflow into reusable skills for future coding-agent automation.
+This repo documents a research-style loop for improving a **SQLite analytics agent** on the Spider benchmark using:
 
-## Eval Loop Flow
+- a **small Mistral model (7B)**
+- tool-augmented execution (`describe_schema`, `execute_sql`, `run_python`)
+- end-to-end **observability** (W&B metrics + per-question traces + notebooks)
+- a structured **RCA → fix → re-eval** iteration process
+- a reusable **skills package** that turns the loop into an execution playbook for any coding agent
 
-```mermaid
-flowchart TD
-    A[Start: Benchmark Slice] --> B[Setup Tracing/Artifacts Context]
-    B --> C[W&B Eval Setup: scorer + run config]
-    C --> D[Run Analytics Agent]
-    D --> E[Log W&B Metrics + Weave Traces]
-    E --> F[Write Artifacts: predictions, failures, trace_index, notebooks]
-    F --> G[Dashboard Publish + Run Label]
-    G --> H[Coding Agent RCA]
-    H --> I[Fix Proposals in Registry]
-    I --> J[Human Review Gate]
-    J -->|Accepted| K[Implement Fixes + Commit Version]
-    J -->|Deferred/Rejected| L[Backlog / SFT Candidate]
-    K --> M[Run Next Eval Slice]
-    M --> B
-```
+## Headline Result: 21% → 84% Accuracy
 
-## How We Used Coding Agent + Skills + MCP
+![Accuracy Progress](accuracy_progress.png)
 
-1. Coding agent handled implementation, RCA evidence extraction, and fix proposal drafting.
-2. Skills package codified repeatable W&B feature steps (`projects`, `runs`, `traces`, `evals`, `reports`) plus one orchestration skill (`coding-agent-self-eval`).
-3. MCP/W&B tools were used for project/run validation and trace/dashboard operations.
-4. Human remained final decision maker for fix acceptance to avoid overfitting.
+Notes:
+- The jump from **89.7% → 82.0%** happened when we expanded from a small curated slice (39 questions) to a **100-question randomized set**, exposing generalization gaps.
 
-## How Skills Guide Any Coding Agent
+## What We Built
 
-The `skills/` hierarchy is designed as an execution playbook that any coding agent can follow.
+- **An analytics ReAct agent** that can inspect schema, write SQL, and post-process results in Python.
+- **A scoring contract** that expects a scalar `answer_value` (the key driver behind many early failures).
+- **Run artifacts for every eval**:
+  - `predictions.jsonl`
+  - `failures.jsonl`
+  - `trace_index.jsonl`
+  - `notebooks.jsonl` (tool + SQL + python "cells")
+- **A fix registry + human approval gate** so we avoid overfitting and keep changes explainable.
+- **A skill pack** (`skills/`) that encodes the repeatable W&B + eval + RCA workflows.
 
-1. `skills/skills.md` is the entrypoint that routes the agent to the right topic skill.
-2. Each topic `SKILL.md` defines deterministic workflow steps and guardrails.
-3. Together, these skills let a coding agent:
-   - bootstrap correct W&B project/entity values,
-   - standardize run naming/config/tags,
-   - query traces for evidence-backed RCA,
-   - run question-level evals with canonical scoring,
-   - publish dashboards/reports with run comparisons,
-   - orchestrate human-gated fix loops across versions.
-4. This makes the eval loop transferable to other analytics or coding agents, not tied only to this project.
-
-## Skills-Driven Setup Flow (Any Agent)
+## Agent Execution Flow (Tool + Notebook Style)
 
 ```mermaid
 flowchart TD
-    A[Choose Target Agent] --> B[Open skills/skills.md]
-    B --> C[wandb-projects]
-    C --> D[Resolve project/entity and runtime context]
-    D --> E[wandb-runs]
-    E --> F[Start versioned run with stable metrics schema]
-    F --> G[wandb-traces]
-    G --> H[Collect trace evidence for failures]
-    H --> I[wandb-evals]
-    I --> J[RCA + human-approved fix decisions]
-    J --> K[wandb-reports]
-    K --> L[Version/run linkage + run_n folders]
-    L --> M[coding-agent-self-eval]
-    M --> N[Implement approved fixes + run next iteration]
+    Q[Question] --> S[describe_schema]
+    S --> P[Plan: choose answer target column]
+    P --> SQL1[execute_sql: explore/inspect]
+    SQL1 --> SQL2[execute_sql: final answer query]
+    SQL2 --> PY[run_python: extract scalar answer_value]
+    PY --> A[Final JSON: answer_value + answer_text + sql + notebook_cells]
+
+    %% Artifacts
+    SQL1 -.-> NB[Notebook cells recorded]
+    SQL2 -.-> NB
+    PY  -.-> NB
 ```
+
+Key idea: SQL does the heavy lifting (joins/filters/aggregations). `run_python` exists to make the output contract reliable (scalar extraction, formatting, light post-processing).
+
+## Eval + RCA Improvement Loop
+
+```mermaid
+flowchart TD
+    A[Pick eval slice
+offset/limit + seed] --> B[Run eval runner]
+    B --> C[Log W&B metrics + Weave traces]
+    C --> D[Persist local artifacts
+predictions/failures/trace_index/notebooks]
+    D --> E[Generate RCA table
+from failures]
+    E --> F[Propose fixes
+(prompt/tool/scorer)]
+    F --> G[Human review gate
+accept/defer/reject]
+    G -->|Accepted| H[Implement + snapshot]
+    G -->|Deferred| I[Backlog / SFT candidate]
+    H --> A
+```
+
+## Skills: Making the Loop Reusable
+
+The `skills/` folder is an execution playbook so a coding agent can reproduce the exact loop on a new codebase.
+
+- Entry point: `skills/skills.md`
+- Topic skills:
+  - `skills/wandb-projects/`
+  - `skills/wandb-runs/`
+  - `skills/wandb-traces/`
+  - `skills/wandb-evals/`
+  - `skills/wandb-reports/`
+  - `skills/coding-agent-self-eval/` (orchestration + human gate)
+
+Skills PR: https://github.com/wandb/wandb-mcp-server/pull/24
 
 ## Runs And Outcomes
 
