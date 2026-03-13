@@ -87,15 +87,34 @@ Skills PR: https://github.com/wandb/wandb-mcp-server/pull/24
 | run_3 | 9xild9wl | offset 100, limit 100 | e6d031a | 37 / 100 | 0.37 | Different slice exposed generalization gaps |
 | run_4 | 0uz4zvcz | offset 200, limit 100 | eeef51e | 53 / 100 | 0.53 | After schema tool + SQL no-case recovery; improved over run_3 |
 
+### Prompt-Iteration Accuracy Timeline (matches the chart)
+
+The chart (`accuracy_progress.png`) is a **prompt/tool-contract iteration timeline**. It is **not the same** as the multi-slice W&B runs above.
+
+| Version | Eval set | Accuracy | What changed |
+|---|---|---:|---|
+| v0 | 100q | 21.0% | Baseline prompt + weak scalar contract |
+| v3 | 100q | 74.4% | Enforced scalar `answer_value` and taught `run_python` extraction |
+| v5 | 39q | 89.7% | Added few-shot examples (small curated slice) |
+| v6 | 100q randomized | 82.0% | Expanded to a larger randomized set (generalization gap surfaced) |
+| v7 | 100q randomized | 83.0% | Refined examples: deterministic ordering + safer joins + column selection |
+| v8 | 100q randomized | 84.0% | Real-data examples + explicit step-by-step reasoning for column extraction |
+
 ## Fixes And Impact
 
-| Fix ID | Type | Status | Change | Observed Effect |
+This table summarizes the fixes/changes that drove the accuracy jumps shown in `accuracy_progress.png`.
+
+| Fix / Change | Category | Where | Why it mattered | Seen in |
 |---|---|---|---|---|
-| fix-0201 | architecture_change | implemented | Normalize non-scalar `answer_value` | Removed `answer_shape_mismatch` in run_2 |
-| fix-0202 | tool_design | implemented | SQL error assist (table/column suggestions) | Removed `tool_error_unresolved` in run_2 |
-| fix-0204 | architecture_change | accepted + implemented | Ground `answer_value` from executed SQL | Included in run_3 |
-| fix-0205 | prompt_update | accepted + implemented | Final-answer execution guard | Included in run_3 |
-| fix-0206 | needs_model_training | deferred | Route persistent semantic misses to SFT | Kept as escalation path |
+| Scalar `answer_value` contract | Prompt + contract | `analytics-agent/agent/prompt.py` | Stopped list/dict answers and made scoring comparable across runs | v3+ |
+| Always extract the scalar via `run_python` | Tooling pattern | `run_python` tool + prompt examples | Prevented “right SQL, wrong output shape” and wrong-column outputs | v3+ |
+| Few-shot examples | Prompt | `analytics-agent/agent/prompt.py` | Reduced SQL shape errors by showing the exact tool-call sequence and JSON shape | v5+ |
+| Deterministic `ORDER BY` when multiple rows are valid | Prompt | `analytics-agent/agent/prompt.py` | Reduced row-order sensitivity where the scorer checks the first row | v7+ |
+| Commentary on *which* column index to extract and *why* | Prompt | `analytics-agent/agent/prompt.py` | Reduced wrong-column extraction (e.g. `rows[0][0]` vs `rows[0][1]`) | v8 |
+
+Interpretation of the v5 → v6 drop:
+- v5’s 89.7% was on **39 questions**.
+- v6 moved to **100 randomized questions**, which included more ambiguous/edge cases (row-order sensitivity, column confusion, multi-join traps).
 
 ## Key Learnings
 
