@@ -78,7 +78,9 @@ The `skills/` folder is an execution playbook so a coding agent can reproduce th
 
 Skills PR: https://github.com/wandb/wandb-mcp-server/pull/24
 
-## Runs And Outcomes
+## Runs And Outcomes (W&B slice runs)
+
+This table is the **W&B run history across Spider slices** (`run_1..run_4`). For the accuracy story shown in `accuracy_progress.png`, see **Prompt-Iteration Accuracy Timeline** below (v0–v8).
 
 | Run Label | W&B Run ID | Slice | Agent SHA | Correct / Total | Accuracy | Summary |
 |---|---|---|---|---:|---:|---|
