@@ -52,19 +52,14 @@ Key idea: SQL does the heavy lifting (joins/filters/aggregations). `run_python` 
 
 ```mermaid
 flowchart TD
-    A[Pick eval slice
-offset/limit + seed] --> B[Run eval runner]
-    B --> C[Log W&B metrics + Weave traces]
-    C --> D[Persist local artifacts
-predictions/failures/trace_index/notebooks]
-    D --> E[Generate RCA table
-from failures]
-    E --> F[Propose fixes
-(prompt/tool/scorer)]
-    F --> G[Human review gate
-accept/defer/reject]
+    A[Pick eval slice<br/>offset/limit + seed] --> B[Run eval runner]
+    B --> C[Log W and B metrics + Weave traces]
+    C --> D[Persist local artifacts<br/>predictions/failures/trace_index/notebooks]
+    D --> E[Generate RCA table<br/>from failures]
+    E --> F[Propose fixes<br/>prompt/tool/scorer]
+    F --> G[Human review gate<br/>accept/defer/reject]
     G -->|Accepted| H[Implement + snapshot]
-    G -->|Deferred| I[Backlog / SFT candidate]
+    G -->|Deferred| I[Backlog or SFT candidate]
     H --> A
 ```
 
